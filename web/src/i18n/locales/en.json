@@ -1,0 +1,244 @@
+{
+  "app": {
+    "name": "SalesAgent",
+    "tagline": "CRM Dashboard"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "leads": "Leads",
+    "pipeline": "Pipeline",
+    "meetings": "Meetings",
+    "templates": "Templates",
+    "analytics": "Analytics"
+  },
+  "common": {
+    "search": "Search",
+    "filter": "Filter",
+    "create": "Create",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "add": "Add",
+    "submit": "Submit",
+    "loading": "Loading...",
+    "noData": "No data available",
+    "viewAll": "View All",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "confirmDelete": "Are you sure you want to delete this?",
+    "required": "Required",
+    "optional": "Optional",
+    "tip": "Tip"
+  },
+  "user": {
+    "role": "Sales Team"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back! Here's what's happening with your sales.",
+    "stats": {
+      "totalLeads": "Total Leads",
+      "pipelineValue": "Pipeline Value",
+      "upcomingMeetings": "Upcoming Meetings",
+      "pendingFollowups": "Pending Follow-ups"
+    },
+    "pipeline": {
+      "title": "Pipeline Overview"
+    },
+    "recentLeads": {
+      "title": "Recent Leads"
+    },
+    "upcomingMeetings": {
+      "title": "Upcoming Meetings",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "duration": "min"
+    },
+    "pendingFollowups": {
+      "title": "Pending Follow-ups",
+      "due": "Due"
+    }
+  },
+  "leads": {
+    "title": "Leads",
+    "subtitle": "Manage your sales leads and track their progress",
+    "addLead": "Add Lead",
+    "searchPlaceholder": "Search leads...",
+    "filters": {
+      "allStatuses": "All Statuses",
+      "allPriorities": "All Priorities"
+    },
+    "table": {
+      "lead": "Lead",
+      "company": "Company",
+      "status": "Status",
+      "priority": "Priority",
+      "value": "Value"
+    },
+    "status": {
+      "new": "New",
+      "contacted": "Contacted",
+      "qualified": "Qualified",
+      "proposal": "Proposal",
+      "negotiation": "Negotiation",
+      "closed_won": "Won",
+      "closed_lost": "Lost"
+    },
+    "priority": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "create": {
+      "title": "Create New Lead",
+      "name": "Full Name",
+      "email": "Email",
+      "phone": "Phone",
+      "company": "Company",
+      "title_label": "Job Title",
+      "source": "Lead Source",
+      "status": "Status",
+      "priority": "Priority",
+      "estimatedValue": "Estimated Value ($)",
+      "notes": "Initial Notes",
+      "sourcePlaceholder": "Website, Referral, etc."
+    },
+    "detail": {
+      "title": "Lead Details",
+      "notes": "Notes",
+      "noNotes": "No notes yet",
+      "addNote": "Add a note...",
+      "notesCount": "Notes ({{count}})"
+    },
+    "noLeads": "No leads found. Create your first lead to get started."
+  },
+  "pipeline": {
+    "title": "Sales Pipeline",
+    "subtitle": "Track leads through your sales process",
+    "summary": {
+      "totalLeads": "Total Leads",
+      "activeLeads": "Active Leads",
+      "pipelineValue": "Pipeline Value",
+      "winRate": "Win Rate"
+    },
+    "stages": {
+      "new": "New",
+      "contacted": "Contacted",
+      "qualified": "Qualified",
+      "proposal": "Proposal",
+      "negotiation": "Negotiation",
+      "closed_won": "Won",
+      "closed_lost": "Lost"
+    },
+    "moveToStage": "Move to Stage",
+    "noLeads": "No leads in this stage"
+  },
+  "meetings": {
+    "title": "Meetings",
+    "subtitle": "Schedule and manage your meetings",
+    "scheduleMeeting": "Schedule Meeting",
+    "viewModes": {
+      "list": "List",
+      "calendar": "Calendar"
+    },
+    "stats": {
+      "upcoming": "Upcoming",
+      "thisWeek": "This Week",
+      "virtual": "Virtual"
+    },
+    "form": {
+      "title": "Schedule New Meeting",
+      "lead": "Lead",
+      "selectLead": "Select a lead",
+      "meetingTitle": "Meeting Title",
+      "description": "Description",
+      "date": "Date",
+      "time": "Time",
+      "duration": "Duration",
+      "location": "Location (optional)",
+      "meetingLink": "Meeting Link (optional)",
+      "locationPlaceholder": "Conference Room A",
+      "linkPlaceholder": "https://zoom.us/j/..."
+    },
+    "durationOptions": {
+      "15": "15 minutes",
+      "30": "30 minutes",
+      "45": "45 minutes",
+      "60": "1 hour",
+      "90": "1.5 hours",
+      "120": "2 hours"
+    },
+    "list": {
+      "upcoming": "Upcoming Meetings",
+      "noMeetings": "No meetings scheduled. Create your first meeting to get started.",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "joinMeeting": "Join Meeting"
+    }
+  },
+  "templates": {
+    "title": "Email Templates",
+    "subtitle": "Manage your email templates for outreach",
+    "createTemplate": "Create Template",
+    "categories": {
+      "introduction": "Introduction",
+      "follow_up": "Follow-up",
+      "proposal": "Proposal",
+      "reminder": "Reminder",
+      "custom": "Custom"
+    },
+    "form": {
+      "title": "Create Email Template",
+      "name": "Template Name",
+      "category": "Category",
+      "subject": "Subject Line",
+      "body": "Email Body",
+      "variables": "Variables (comma-separated)",
+      "variablesPlaceholder": "name, company, senderName",
+      "subjectPlaceholder": "Hi {{name}}, quick question about {{company}}",
+      "bodyPlaceholder": "Hi {{name}},\n\nI hope this email finds you well...\n\nBest regards,\n{{senderName}}",
+      "tip": "Use double curly braces for variables, e.g., {{name}} will be replaced with the lead's name."
+    },
+    "preview": {
+      "subject": "Subject",
+      "body": "Body",
+      "variables": "Variables"
+    },
+    "noTemplates": "No templates yet. Create your first template to get started."
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Track your sales performance and metrics",
+    "dateRanges": {
+      "30d": "Last 30 Days",
+      "month": "This Month",
+      "all": "All Time"
+    },
+    "metrics": {
+      "totalRevenue": "Total Revenue",
+      "winRate": "Win Rate",
+      "emailsSent": "Emails Sent",
+      "meetings": "Meetings"
+    },
+    "charts": {
+      "pipelineByValue": "Pipeline by Value",
+      "leadsByStatus": "Leads by Status",
+      "pipelineByCount": "Pipeline by Count",
+      "emailActivity": "Email Activity"
+    },
+    "summary": {
+      "title": "Pipeline Summary",
+      "totalLeads": "Total Leads",
+      "activeLeads": "Active Leads",
+      "pipelineValue": "Pipeline Value",
+      "winRate": "Win Rate"
+    }
+  },
+  "language": {
+    "en": "English",
+    "zh": "中文",
+    "switch": "Switch Language"
+  }
+}

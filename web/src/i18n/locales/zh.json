@@ -1,0 +1,244 @@
+{
+  "app": {
+    "name": "销售助手",
+    "tagline": "客户关系管理系统"
+  },
+  "nav": {
+    "dashboard": "仪表盘",
+    "leads": "线索",
+    "pipeline": "销售管道",
+    "meetings": "会议",
+    "templates": "邮件模板",
+    "analytics": "数据分析"
+  },
+  "common": {
+    "search": "搜索",
+    "filter": "筛选",
+    "create": "创建",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "close": "关闭",
+    "add": "添加",
+    "submit": "提交",
+    "loading": "加载中...",
+    "noData": "暂无数据",
+    "viewAll": "查看全部",
+    "copy": "复制",
+    "copied": "已复制！",
+    "confirmDelete": "确定要删除吗？",
+    "required": "必填",
+    "optional": "可选",
+    "tip": "提示"
+  },
+  "user": {
+    "role": "销售团队"
+  },
+  "dashboard": {
+    "title": "仪表盘",
+    "welcome": "欢迎回来！这是您销售的最新动态。",
+    "stats": {
+      "totalLeads": "总线索数",
+      "pipelineValue": "管道价值",
+      "upcomingMeetings": "即将开始的会议",
+      "pendingFollowups": "待跟进事项"
+    },
+    "pipeline": {
+      "title": "销售管道概览"
+    },
+    "recentLeads": {
+      "title": "最近线索"
+    },
+    "upcomingMeetings": {
+      "title": "即将开始的会议",
+      "today": "今天",
+      "tomorrow": "明天",
+      "duration": "分钟"
+    },
+    "pendingFollowups": {
+      "title": "待跟进事项",
+      "due": "截止"
+    }
+  },
+  "leads": {
+    "title": "线索管理",
+    "subtitle": "管理您的销售线索并跟踪其进展",
+    "addLead": "添加线索",
+    "searchPlaceholder": "搜索线索...",
+    "filters": {
+      "allStatuses": "所有状态",
+      "allPriorities": "所有优先级"
+    },
+    "table": {
+      "lead": "线索",
+      "company": "公司",
+      "status": "状态",
+      "priority": "优先级",
+      "value": "价值"
+    },
+    "status": {
+      "new": "新线索",
+      "contacted": "已联系",
+      "qualified": "已确认",
+      "proposal": "提案中",
+      "negotiation": "谈判中",
+      "closed_won": "已成交",
+      "closed_lost": "已丢失"
+    },
+    "priority": {
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "create": {
+      "title": "创建新线索",
+      "name": "姓名",
+      "email": "电子邮箱",
+      "phone": "电话",
+      "company": "公司",
+      "title_label": "职位",
+      "source": "线索来源",
+      "status": "状态",
+      "priority": "优先级",
+      "estimatedValue": "预估价值 (美元)",
+      "notes": "初始备注",
+      "sourcePlaceholder": "网站、推荐人等"
+    },
+    "detail": {
+      "title": "线索详情",
+      "notes": "备注",
+      "noNotes": "暂无备注",
+      "addNote": "添加备注...",
+      "notesCount": "备注 ({{count}})"
+    },
+    "noLeads": "暂无线索。创建您的第一个线索开始。"
+  },
+  "pipeline": {
+    "title": "销售管道",
+    "subtitle": "跟踪线索在销售流程中的进展",
+    "summary": {
+      "totalLeads": "总线索数",
+      "activeLeads": "活跃线索",
+      "pipelineValue": "管道价值",
+      "winRate": "成交率"
+    },
+    "stages": {
+      "new": "新线索",
+      "contacted": "已联系",
+      "qualified": "已确认",
+      "proposal": "提案中",
+      "negotiation": "谈判中",
+      "closed_won": "已成交",
+      "closed_lost": "已丢失"
+    },
+    "moveToStage": "移动到阶段",
+    "noLeads": "此阶段暂无线索"
+  },
+  "meetings": {
+    "title": "会议",
+    "subtitle": "安排和管理您的会议",
+    "scheduleMeeting": "安排会议",
+    "viewModes": {
+      "list": "列表",
+      "calendar": "日历"
+    },
+    "stats": {
+      "upcoming": "即将开始",
+      "thisWeek": "本周",
+      "virtual": "线上"
+    },
+    "form": {
+      "title": "安排新会议",
+      "lead": "线索",
+      "selectLead": "选择线索",
+      "meetingTitle": "会议标题",
+      "description": "描述",
+      "date": "日期",
+      "time": "时间",
+      "duration": "时长",
+      "location": "地点（可选）",
+      "meetingLink": "会议链接（可选）",
+      "locationPlaceholder": "会议室 A",
+      "linkPlaceholder": "https://zoom.us/j/..."
+    },
+    "durationOptions": {
+      "15": "15 分钟",
+      "30": "30 分钟",
+      "45": "45 分钟",
+      "60": "1 小时",
+      "90": "1.5 小时",
+      "120": "2 小时"
+    },
+    "list": {
+      "upcoming": "即将开始的会议",
+      "noMeetings": "暂无会议安排。创建您的第一个会议开始。",
+      "today": "今天",
+      "tomorrow": "明天",
+      "joinMeeting": "加入会议"
+    }
+  },
+  "templates": {
+    "title": "邮件模板",
+    "subtitle": "管理您的邮件营销模板",
+    "createTemplate": "创建模板",
+    "categories": {
+      "introduction": "介绍",
+      "follow_up": "跟进",
+      "proposal": "提案",
+      "reminder": "提醒",
+      "custom": "自定义"
+    },
+    "form": {
+      "title": "创建邮件模板",
+      "name": "模板名称",
+      "category": "分类",
+      "subject": "邮件主题",
+      "body": "邮件正文",
+      "variables": "变量（逗号分隔）",
+      "variablesPlaceholder": "姓名, 公司, 发件人姓名",
+      "subjectPlaceholder": "您好 {{name}}，关于 {{company}} 的问题",
+      "bodyPlaceholder": "您好 {{name}}，\n\n希望这封邮件能找到您...\n\n此致，\n{{senderName}}",
+      "tip": "使用双花括号表示变量，例如 {{name}} 将被替换为线索的姓名。"
+    },
+    "preview": {
+      "subject": "主题",
+      "body": "正文",
+      "variables": "变量"
+    },
+    "noTemplates": "暂无模板。创建您的第一个模板开始。"
+  },
+  "analytics": {
+    "title": "数据分析",
+    "subtitle": "跟踪您的销售业绩和指标",
+    "dateRanges": {
+      "30d": "最近 30 天",
+      "month": "本月",
+      "all": "全部"
+    },
+    "metrics": {
+      "totalRevenue": "总收入",
+      "winRate": "成交率",
+      "emailsSent": "已发邮件",
+      "meetings": "会议数"
+    },
+    "charts": {
+      "pipelineByValue": "管道价值分布",
+      "leadsByStatus": "线索状态分布",
+      "pipelineByCount": "管道数量分布",
+      "emailActivity": "邮件活动趋势"
+    },
+    "summary": {
+      "title": "管道摘要",
+      "totalLeads": "总线索数",
+      "activeLeads": "活跃线索",
+      "pipelineValue": "管道价值",
+      "winRate": "成交率"
+    }
+  },
+  "language": {
+    "en": "English",
+    "zh": "中文",
+    "switch": "切换语言"
+  }
+}

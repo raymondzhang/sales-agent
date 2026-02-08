@@ -1,0 +1,10 @@
+# Render.com deployment configuration for static site
+
+services:
+  - type: static
+    name: sales-agent-web
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://sales-agent-api.onrender.com/api
