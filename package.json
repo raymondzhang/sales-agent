@@ -4,6 +4,9 @@
   "description": "A comprehensive sales agent MCP server with lead management, email automation, scheduling, and analytics",
   "type": "module",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -12,7 +15,8 @@
     "dev:server": "tsc --watch & nodemon dist/server-http.js",
     "build:web": "cd web && npm run build",
     "dev:web": "cd web && npm run dev",
-    "setup:web": "cd web && npm install"
+    "setup:web": "cd web && npm install",
+    "postinstall": "npm run build"
   },
   "keywords": [
     "mcp",

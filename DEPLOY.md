@@ -3,228 +3,333 @@
 ## 🎯 Goal
 Deploy Sales Agent so your team can access it via WeChat (微信) with persistent data storage.
 
-## 💰 Economic Solution: Render.com (Free Tier)
+## 💰 Recommended Solution: Railway.app (Free Tier with Persistent Storage)
 
 ### What You Get (Free)
 - **Web Dashboard**: HTTPS URL accessible from WeChat
 - **API Server**: Backend with SQLite database
-- **Persistent Storage**: 1GB disk for database
+- **Persistent Storage**: 5GB free disk space for database
 - **Auto-deploy**: From GitHub
 - **Custom Domain**: Support for your own domain
 
 ### Estimated Cost
-- **Free tier**: $0/month (perfect for small teams)
-- **Paid tier**: $7-19/month (if you need more resources)
+- **Free tier**: $0/month (includes 5GB storage + $5 credits monthly)
+- **Starter plan**: $5/month (if you exceed free credits)
 
 ---
 
-## 📋 Step-by-Step Deployment
+## 📋 Step-by-Step Deployment on Railway
 
 ### Step 1: Push to GitHub
 
+From the `sales-agent` folder:
+
 ```bash
-# Initialize git (if not done)
+cd /Users/zyp/Documents/KimiVSCodeProjectRoot/sales-agent
 git init
 git add .
 git commit -m "Initial commit"
-
-# Create GitHub repo and push
 git remote add origin https://github.com/YOUR_USERNAME/sales-agent.git
 git push -u origin main
 ```
 
-### Step 2: Deploy API Server on Render
+> **Note**: Replace `YOUR_USERNAME` with your actual GitHub username.
 
-1. Go to [render.com](https://render.com) and sign up/login
-2. Click **New +** → **Web Service**
-3. Connect your GitHub repo
-4. Configure:
-   - **Name**: `sales-agent-api`
-   - **Runtime**: Node
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm run start:server`
-   - **Plan**: Free
-5. Add Environment Variables:
-   - `NODE_ENV`: `production`
-   - `PORT`: `10000`
-   - `DATA_DIR`: `/var/data`
-6. Click **Advanced** → Add Disk:
-   - **Name**: `sales-data`
-   - **Mount Path**: `/var/data`
-   - **Size**: 1 GB
-7. Click **Create Web Service**
+---
 
-### Step 3: Deploy Web Dashboard on Render
+### Step 2: Sign Up on Railway
 
-1. In Render, click **New +** → **Static Site**
-2. Connect the same GitHub repo
+1. Go to [railway.app](https://railway.app)
+2. Click **"Start a New Project"**
+3. Choose **"Deploy from GitHub repo"**
+4. Authorize Railway to access your GitHub account
+5. Select your `sales-agent` repository
+
+---
+
+### Step 3: Configure the API Service
+
+Railway should auto-detect your Node.js project. Configure these settings:
+
+#### Basic Settings:
+- **Name**: `sales-agent-api`
+- **Root Directory**: `/` (leave empty or set to project root)
+- **Build Command**: `npm install && npm rebuild sqlite3 && npm run build`
+- **Start Command**: `npm run start:server`
+
+#### Environment Variables:
+Click **"Variables"** tab, then add:
+
+```
+NODE_ENV=production
+PORT=3000
+DATA_DIR=/app/data
+```
+
+> **Note**: Click "Add" for each variable, then click "Deploy" to apply changes.
+
+---
+
+### Step 4: Add Persistent Storage (Volume)
+
+This is crucial for keeping your data!
+
+1. In your service dashboard, click **"Volumes"** tab
+2. Click **"New Volume"**
+3. Configure:
+   - **Mount Path**: `/app/data`
+   - **Size**: 1 GB (you can increase up to 5GB on free tier)
+4. Click **"Create"**
+
+Your SQLite database will be stored at `/app/data/sales-agent.db`
+
+---
+
+### Step 5: Deploy the Web Dashboard
+
+Now deploy the React frontend as a separate service:
+
+1. In your Railway project, click **"New"** → **"Service"** → **"GitHub Repo"**
+2. Select the same `sales-agent` repo again
 3. Configure:
    - **Name**: `sales-agent-web`
-   - **Build Command**: `cd web && npm install && npm run build`
-   - **Publish Directory**: `web/dist`
-4. Add Environment Variable:
-   - `VITE_API_URL`: `https://sales-agent-api.onrender.com/api`
-   (Replace with your actual API URL from Step 2)
-5. Click **Create Static Site**
+   - **Root Directory**: `web` (important!)
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npx serve -s dist -l 3000` (or leave blank for static sites)
 
-### Step 4: Update CORS (Important!)
+#### Alternative: Deploy as Static Site
+Railway may auto-detect it as a static site. If so:
+- Set **Publish Directory**: `dist`
 
-After deployment, update `sales-agent/src/server-http.ts`:
+#### Environment Variables for Web:
+```
+VITE_API_URL=https://your-api-service-url.railway.app/api
+```
+
+> **Note**: Get your API URL from the `sales-agent-api` service (click on it, copy the URL)
+
+---
+
+### Step 6: Update CORS Settings
+
+After getting your web dashboard URL, update the API to allow it:
+
+1. Go to your `sales-agent-api` service
+2. Click **"Variables"** tab
+3. Click **"Edit Config"** on the right
+4. Add this environment variable:
+
+```
+CORS_ORIGIN=https://your-web-service-url.railway.app
+```
+
+Then in your code (`src/server-http.ts`), update the CORS section:
 
 ```typescript
 const corsMiddleware = cors({
-  origin: [
-    "https://sales-agent-web.onrender.com",  // Your web dashboard URL
-    "https://your-domain.com",  // If you have custom domain
+  origin: process.env.CORS_ORIGIN || [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
   ],
   credentials: true,
 });
 ```
 
-Then redeploy the API.
+Redeploy the API service.
 
 ---
 
 ## 📱 WeChat Access
 
-### Option A: Direct Link Sharing
-1. Copy your web dashboard URL: `https://sales-agent-web.onrender.com`
+### Option A: Direct Link Sharing (Easiest)
+1. Copy your web dashboard URL from Railway (e.g., `https://sales-agent-web.up.railway.app`)
 2. Share in WeChat group/chat
-3. Team members can open in WeChat browser
+3. Team members can open in WeChat built-in browser
 
-### Option B: WeChat Work Integration (Recommended for Teams)
-If your company uses WeChat Work (企业微信):
-
-1. Go to WeChat Work Admin Console
-2. **Applications** → **Create Application**
-3. Set application URL to your deployed dashboard
-4. Team members access via WeChat Work app
-
-### Option C: QR Code
-1. Generate QR code from your URL
+### Option B: QR Code
+1. Generate a QR code from your URL
 2. Print and place in office
 3. Team scans to access
 
----
+Online QR generators:
+- https://qr-code-generator.com
+- https://www.qr-code-generator.com
 
-## 🔒 Security Considerations
+### Option C: WeChat Work Integration (For Company Teams)
+If your company uses WeChat Work (企业微信):
 
-### For Production Use
-
-1. **Add Authentication** (Recommended)
-   ```bash
-   npm install express-session passport
-   ```
-   Add simple password protection or OAuth.
-
-2. **Database Backup**
-   - Render disk is persistent but back up regularly
-   - Download `/var/data/sales-agent.db` periodically
-
-3. **HTTPS**
-   - Render provides HTTPS automatically
-   - WeChat requires HTTPS for web apps
-
-4. **Rate Limiting**
-   Add rate limiting to prevent abuse:
-   ```bash
-   npm install express-rate-limit
-   ```
+1. Go to WeChat Work Admin Console (管理后台)
+2. **Applications** → **Create Application** (创建应用)
+3. Set application URL to your Railway dashboard URL
+4. Team members access via WeChat Work app
 
 ---
 
-## 🔄 Alternative: China-Accessible Deployment
+## 🔒 Security & Production Checklist
 
-If Render is slow in China, consider:
+Before sharing with your team:
 
-### Option 1: 腾讯云 (Tencent Cloud) - Free Tier
-- CloudBase (云开发): Free tier with database
--轻量应用服务器: ~¥40/month
-
-### Option 2: Railway.app
-- Similar to Render
-- May have better China connectivity
-
-### Option 3: Fly.io
-- Edge deployment
-- Good global performance
+- [ ] API service deployed and health check passes (`/health` endpoint)
+- [ ] Web dashboard loads correctly
+- [ ] Volume is mounted at `/app/data` (check in Railway dashboard)
+- [ ] Test creating a lead → restart service → verify data persists
+- [ ] HTTPS is enabled (Railway provides this automatically)
+- [ ] CORS configured to allow your web domain
+- [ ] Test from mobile device (iPhone/Android)
+- [ ] Test from WeChat app
 
 ---
 
-## 📊 Database Migration
+## 🔄 Alternative Deployment Options
 
-To migrate from in-memory to SQLite:
+### Option 2: Fly.io (Also Free with 3GB Storage)
 
 ```bash
-# Export existing data (if any)
-curl https://your-api.com/api/dashboard > backup.json
+# Install flyctl
+brew install flyctl
 
-# After deployment, data persists automatically
-# Database is at /var/data/sales-agent.db on Render
+# Login
+cd /Users/zyp/Documents/KimiVSCodeProjectRoot/sales-agent
+fly auth login
+
+# Launch (creates fly.toml)
+fly launch
+
+# Create volume for persistence
+fly volumes create sales_data --size 3
+
+# Deploy
+fly deploy
 ```
+
+Your app will be at `https://your-app-name.fly.dev`
+
+### Option 3: Self-Host on VPS (Cheapest Long-term)
+
+| Provider | Price | Storage | Best For |
+|----------|-------|---------|----------|
+| **Hetzner** (Germany) | €3.29/month | 20GB | Cheapest reliable |
+| **DigitalOcean** | $4/month | 25GB | Easy to use |
+| **Vultr** | $2.50/month | 10GB | Lowest price |
+| **腾讯云轻量服务器** | ~¥40/month | 50GB | Best for China users |
 
 ---
 
 ## 🛠 Troubleshooting
 
-### Issue: WeChat shows "Unable to open page"
-- **Solution**: Ensure HTTPS is enabled
-- Check CORS settings allow your domain
+### Issue: "Service crashed" or "Exit code 1"
+**Solution**: Check logs in Railway dashboard → "Deployments" tab. Common fixes:
+- Ensure `DATA_DIR=/app/data` is set
+- Ensure Volume is mounted at `/app/data`
+- Check that `npm run build` succeeded
+
+### Issue: "Cannot find module" errors
+**Solution**: 
+- Verify `npm install` ran during build
+- Check that `package.json` includes all dependencies
+- Try clearing build cache: Railway dashboard → "Settings" → "Clear Build Cache"
 
 ### Issue: Data disappears after restart
-- **Solution**: Verify disk is mounted at `/var/data`
-- Check `DATA_DIR` environment variable
+**Solution**: 
+- Volume not mounted correctly
+- Check `DATA_DIR` environment variable is set to `/app/data`
+- Verify database file exists: SSH into container or check logs
+
+### Issue: WeChat shows "Unable to open page"
+**Solution**: 
+- Ensure HTTPS is enabled (Railway provides this)
+- Check CORS settings allow your web domain
+- Test URL in regular browser first
 
 ### Issue: Slow loading in China
-- **Solution**: Use a CDN or deploy to a China-based server
-- Consider Tencent Cloud or Alibaba Cloud
+**Solution**: 
+- Railway servers are global but may be slow in China
+- Consider **腾讯云** or **阿里云** for China deployment
+- Or use a CDN like Cloudflare (free)
 
 ---
 
-## ✅ Checklist
+## 💾 Database Backup
 
-Before sharing with your team:
+### Manual Backup
+Download the database file from Railway:
 
-- [ ] API deployed and health check passes
-- [ ] Web dashboard loads correctly
-- [ ] HTTPS enabled
-- [ ] CORS configured
-- [ ] Database disk mounted
-- [ ] Test create/read/update operations
-- [ ] Test from WeChat mobile app
-- [ ] Backup strategy in place
+1. Go to your API service → "Volumes" tab
+2. Click on the volume name
+3. Use Railway CLI to download:
+```bash
+railway login
+railway connect  # SSH into container
+cp /app/data/sales-agent.db /tmp/
+# Download from /tmp/sales-agent.db
+```
+
+Or use a simple backup script in your app:
+```bash
+# Add to package.json scripts
+"backup": "cp /app/data/sales-agent.db /app/data/backup-$(date +%Y%m%d).db"
+```
 
 ---
 
-## 🚀 Quick Start for Team
+## 🚀 Quick Start for Your Team
 
-Once deployed, share this with your team:
+Once deployed, share this message in WeChat:
 
 ```
-销售助手已上线！📱
+🎉 销售助手已上线！
 
-访问链接: https://sales-agent-web.onrender.com
+📊 访问链接: https://your-app-url.railway.app
 
-功能：
-- 📊 查看销售仪表盘
-- 👥 管理客户线索
-- 📅 安排会议
-- ✉️ 邮件模板
-- 📈 数据分析
+✅ 功能：
+• 客户线索管理
+• 销售管道跟踪  
+• 会议日程安排
+• 邮件模板管理
+• 数据分析报表
 
-支持中英文切换
-数据自动保存
+🌐 支持中英文切换
+💾 数据自动云端保存
+📱 手机/电脑都能用
+
+有问题随时找我！
 ```
+
+---
+
+## 📊 Railway Free Tier Limits
+
+| Resource | Free Limit |
+|----------|-----------|
+| Execution time | 500 hours/month |
+| RAM | 512MB per service |
+| Storage | 5GB total |
+| Outbound data | 100GB/month |
+
+For a small sales team (< 10 people), this should be plenty!
 
 ---
 
 ## 💡 Next Steps
 
-1. **Custom Domain**: Buy a domain and point to Render
-2. **WeChat Mini Program**: Convert to mini app for better UX
-3. **Notifications**: Add email/WeChat notifications for follow-ups
-4. **Mobile App**: Build native app using Capacitor
+1. **Custom Domain**: 
+   - Buy domain (e.g., sales.yourcompany.com)
+   - Add to Railway: Service → Settings → Domains
+
+2. **Add Authentication**:
+   ```bash
+   npm install express-session passport
+   ```
+   Add simple password protection
+
+3. **WeChat Mini Program**:
+   - Convert to WeChat Mini Program for better UX
+   - Requires separate development
+
+4. **Notifications**:
+   - Add email notifications for follow-ups
+   - Integrate WeChat Work API for alerts
 
 ---
 
-**Questions?** Check Render docs: https://render.com/docs
+**Need help?** Check Railway docs: https://docs.railway.app
