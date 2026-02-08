@@ -7,7 +7,7 @@ import url from "url";
 import cors from "cors";
 import { initDatabase, leadsDB, templatesDB, emailsDB, meetingsDB, followUpsDB, analyticsDB } from "./db.js";
 // Initialize database
-initDatabase();
+await initDatabase();
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================

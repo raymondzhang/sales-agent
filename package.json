@@ -30,12 +30,13 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
     "cors": "^2.8.5",
-    "sqlite3": "^5.1.6",
+    "sql.js": "^1.10.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/node": "^22.10.5",
+    "@types/sql.js": "^1.4.9",
     "nodemon": "^3.0.3",
     "typescript": "^5.7.2"
   }

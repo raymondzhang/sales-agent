@@ -54,7 +54,7 @@ Railway should auto-detect your Node.js project. Configure these settings:
 #### Basic Settings:
 - **Name**: `sales-agent-api`
 - **Root Directory**: `/` (leave empty or set to project root)
-- **Build Command**: `npm install && npm rebuild sqlite3 && npm run build`
+- **Build Command**: `npm install && npm run build`
 - **Start Command**: `npm run start:server`
 
 #### Environment Variables:
