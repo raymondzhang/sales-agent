@@ -984,7 +984,7 @@ const httpServer = http.createServer(async (req, res) => {
         res.end(JSON.stringify({
             status: "ok",
             timestamp: new Date().toISOString(),
-            database: "sqlite",
+            database: "postgresql",
         }));
         return;
     }
@@ -1093,7 +1093,7 @@ httpServer.listen(PORT, () => {
     console.log(`API endpoints available at http://${HOST}:${PORT}/api/`);
     console.log(`MCP endpoint available at http://${HOST}:${PORT}/mcp`);
     console.log(`Health check at http://${HOST}:${PORT}/health`);
-    console.log(`Database: SQLite at ${process.env.DATA_DIR || './data'}/sales-agent.db`);
+    console.log(`Database: PostgreSQL ${DATABASE_URL ? '(connected via DATABASE_URL)' : '(local)'}`);
 });
 // Graceful shutdown
 process.on("SIGINT", () => {

@@ -1,166 +1,132 @@
-import initSqlJs from 'sql.js';
-import fs from 'fs';
-import path from 'path';
-// Ensure data directory exists
-const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data');
-if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+import { Pool } from 'pg';
+// Database connection using DATABASE_URL (Railway provides this automatically)
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+    console.warn('DATABASE_URL not set. Using local development database.');
 }
-const DB_PATH = path.join(DATA_DIR, 'sales-agent.db');
-let db = null;
-let SQL = null;
-// Initialize SQL.js
-async function initSQL() {
-    if (!SQL) {
-        SQL = await initSqlJs();
-    }
-    return SQL;
-}
-// Load or create database
-async function loadDatabase() {
-    if (db)
-        return db;
-    const sql = await initSQL();
-    if (fs.existsSync(DB_PATH)) {
-        const filebuffer = fs.readFileSync(DB_PATH);
-        db = new sql.Database(filebuffer);
-    }
-    else {
-        db = new sql.Database();
-    }
-    return db;
-}
-// Save database to file
-function saveDatabase() {
-    if (!db)
-        return;
-    const data = db.export();
-    fs.writeFileSync(DB_PATH, Buffer.from(data));
-}
-// Execute SQL and save
-function exec(sql, params = []) {
-    if (!db)
-        throw new Error('Database not initialized');
-    const result = db.run(sql, params);
-    saveDatabase();
-    return result;
-}
-// Query single row
-function get(sql, params = []) {
-    if (!db)
-        throw new Error('Database not initialized');
-    const stmt = db.prepare(sql);
-    stmt.bind(params);
-    const result = stmt.step() ? stmt.getAsObject() : undefined;
-    stmt.free();
-    return result;
-}
-// Query all rows
-function all(sql, params = []) {
-    if (!db)
-        throw new Error('Database not initialized');
-    const stmt = db.prepare(sql);
-    stmt.bind(params);
-    const results = [];
-    while (stmt.step()) {
-        results.push(stmt.getAsObject());
-    }
-    stmt.free();
-    return results;
-}
-// Helper for JSON
+// Create connection pool
+const pool = new Pool({
+    connectionString: DATABASE_URL || 'postgresql://localhost:5432/sales_agent',
+    ssl: DATABASE_URL ? { rejectUnauthorized: false } : false, // Required for Railway PostgreSQL
+});
+// Helper to parse JSON from PostgreSQL
 function parseJSON(json) {
-    try {
-        return JSON.parse(json);
+    if (typeof json === 'string') {
+        try {
+            return JSON.parse(json);
+        }
+        catch {
+            return [];
+        }
     }
-    catch {
-        return [];
+    return json;
+}
+// Helper to convert camelCase to snake_case for PostgreSQL
+function toSnakeCase(obj) {
+    const result = {};
+    for (const [key, value] of Object.entries(obj)) {
+        const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+        result[snakeKey] = value;
+    }
+    return result;
+}
+// Execute query with params
+async function query(sql, params = []) {
+    const client = await pool.connect();
+    try {
+        return await client.query(sql, params);
+    }
+    finally {
+        client.release();
     }
 }
 // Initialize tables
 export async function initDatabase() {
-    await loadDatabase();
-    // Leads table
-    exec(`
-    CREATE TABLE IF NOT EXISTS leads (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      email TEXT NOT NULL,
-      phone TEXT,
-      company TEXT NOT NULL,
-      title TEXT,
-      status TEXT DEFAULT 'new',
-      source TEXT NOT NULL,
-      notes TEXT DEFAULT '[]',
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      last_contacted_at TEXT,
-      estimated_value REAL,
-      priority TEXT DEFAULT 'medium',
-      tags TEXT DEFAULT '[]'
-    )
-  `);
-    // Email templates table
-    exec(`
-    CREATE TABLE IF NOT EXISTS email_templates (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      subject TEXT NOT NULL,
-      body TEXT NOT NULL,
-      category TEXT DEFAULT 'custom',
-      variables TEXT DEFAULT '[]'
-    )
-  `);
-    // Email logs table
-    exec(`
-    CREATE TABLE IF NOT EXISTS email_logs (
-      id TEXT PRIMARY KEY,
-      lead_id TEXT NOT NULL,
-      template_id TEXT,
-      subject TEXT NOT NULL,
-      body TEXT NOT NULL,
-      sent_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      opened_at TEXT,
-      clicked_at TEXT,
-      status TEXT DEFAULT 'sent'
-    )
-  `);
-    // Meetings table
-    exec(`
-    CREATE TABLE IF NOT EXISTS meetings (
-      id TEXT PRIMARY KEY,
-      lead_id TEXT NOT NULL,
-      title TEXT NOT NULL,
-      description TEXT,
-      scheduled_at TEXT NOT NULL,
-      duration INTEGER DEFAULT 30,
-      location TEXT,
-      meeting_link TEXT,
-      status TEXT DEFAULT 'scheduled',
-      outcome TEXT
-    )
-  `);
-    // Follow-ups table
-    exec(`
-    CREATE TABLE IF NOT EXISTS follow_ups (
-      id TEXT PRIMARY KEY,
-      lead_id TEXT NOT NULL,
-      type TEXT DEFAULT 'task',
-      scheduled_at TEXT NOT NULL,
-      description TEXT NOT NULL,
-      completed INTEGER DEFAULT 0,
-      completed_at TEXT
-    )
-  `);
-    // Insert default templates if none exist
-    const countRow = get('SELECT COUNT(*) as count FROM email_templates');
-    if (!countRow || countRow.count === 0) {
-        const defaultTemplates = [
-            {
-                id: 'template-1',
-                name: 'Introduction Email',
-                subject: 'Introduction - {{company}} & {{senderCompany}}',
-                body: `Hi {{name}},
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        // Leads table
+        await client.query(`
+      CREATE TABLE IF NOT EXISTS leads (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        phone TEXT,
+        company TEXT NOT NULL,
+        title TEXT,
+        status TEXT DEFAULT 'new',
+        source TEXT NOT NULL,
+        notes JSONB DEFAULT '[]'::jsonb,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_contacted_at TIMESTAMP,
+        estimated_value REAL,
+        priority TEXT DEFAULT 'medium',
+        tags JSONB DEFAULT '[]'::jsonb
+      )
+    `);
+        // Email templates table
+        await client.query(`
+      CREATE TABLE IF NOT EXISTS email_templates (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        body TEXT NOT NULL,
+        category TEXT DEFAULT 'custom',
+        variables JSONB DEFAULT '[]'::jsonb
+      )
+    `);
+        // Email logs table
+        await client.query(`
+      CREATE TABLE IF NOT EXISTS email_logs (
+        id TEXT PRIMARY KEY,
+        lead_id TEXT NOT NULL,
+        template_id TEXT,
+        subject TEXT NOT NULL,
+        body TEXT NOT NULL,
+        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        opened_at TIMESTAMP,
+        clicked_at TIMESTAMP,
+        status TEXT DEFAULT 'sent'
+      )
+    `);
+        // Meetings table
+        await client.query(`
+      CREATE TABLE IF NOT EXISTS meetings (
+        id TEXT PRIMARY KEY,
+        lead_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        scheduled_at TIMESTAMP NOT NULL,
+        duration INTEGER DEFAULT 30,
+        location TEXT,
+        meeting_link TEXT,
+        status TEXT DEFAULT 'scheduled',
+        outcome TEXT
+      )
+    `);
+        // Follow-ups table
+        await client.query(`
+      CREATE TABLE IF NOT EXISTS follow_ups (
+        id TEXT PRIMARY KEY,
+        lead_id TEXT NOT NULL,
+        type TEXT DEFAULT 'task',
+        scheduled_at TIMESTAMP NOT NULL,
+        description TEXT NOT NULL,
+        completed BOOLEAN DEFAULT false,
+        completed_at TIMESTAMP
+      )
+    `);
+        await client.query('COMMIT');
+        // Insert default templates if none exist
+        const { rows } = await query('SELECT COUNT(*) as count FROM email_templates');
+        if (parseInt(rows[0].count) === 0) {
+            const defaultTemplates = [
+                {
+                    id: 'template-1',
+                    name: 'Introduction Email',
+                    subject: 'Introduction - {{company}} & {{senderCompany}}',
+                    body: `Hi {{name}},
 
 I hope this email finds you well. My name is {{senderName}} from {{senderCompany}}.
 
@@ -174,14 +140,14 @@ Best regards,
 {{senderName}}
 {{senderTitle}}
 {{senderCompany}}`,
-                category: 'introduction',
-                variables: JSON.stringify(['name', 'company', 'senderName', 'senderCompany', 'achievement', 'goal', 'senderTitle']),
-            },
-            {
-                id: 'template-2',
-                name: 'Follow-Up After No Response',
-                subject: 'Re: {{previousSubject}}',
-                body: `Hi {{name}},
+                    category: 'introduction',
+                    variables: JSON.stringify(['name', 'company', 'senderName', 'senderCompany', 'achievement', 'goal', 'senderTitle']),
+                },
+                {
+                    id: 'template-2',
+                    name: 'Follow-Up After No Response',
+                    subject: 'Re: {{previousSubject}}',
+                    body: `Hi {{name}},
 
 I wanted to follow up on my previous email about {{topic}}.
 
@@ -191,14 +157,14 @@ If this isn't a priority right now, I completely understand. Just let me know if
 
 Best,
 {{senderName}}`,
-                category: 'follow_up',
-                variables: JSON.stringify(['name', 'previousSubject', 'topic', 'valueProposition', 'senderName']),
-            },
-            {
-                id: 'template-3',
-                name: 'Meeting Proposal',
-                subject: 'Proposal Discussion - {{company}}',
-                body: `Hi {{name}},
+                    category: 'follow_up',
+                    variables: JSON.stringify(['name', 'previousSubject', 'topic', 'valueProposition', 'senderName']),
+                },
+                {
+                    id: 'template-3',
+                    name: 'Meeting Proposal',
+                    subject: 'Proposal Discussion - {{company}}',
+                    body: `Hi {{name}},
 
 Thank you for taking the time to speak with me {{meetingDate}}.
 
@@ -211,21 +177,30 @@ Would you be available for a 30-minute call this week to review the details and 
 
 Best regards,
 {{senderName}}`,
-                category: 'proposal',
-                variables: JSON.stringify(['name', 'company', 'meetingDate', 'keyPoints', 'estimatedValue', 'senderName']),
-            },
-        ];
-        for (const template of defaultTemplates) {
-            exec('INSERT INTO email_templates (id, name, subject, body, category, variables) VALUES (?, ?, ?, ?, ?, ?)', [template.id, template.name, template.subject, template.body, template.category, template.variables]);
+                    category: 'proposal',
+                    variables: JSON.stringify(['name', 'company', 'meetingDate', 'keyPoints', 'estimatedValue', 'senderName']),
+                },
+            ];
+            for (const template of defaultTemplates) {
+                await query('INSERT INTO email_templates (id, name, subject, body, category, variables) VALUES ($1, $2, $3, $4, $5, $6)', [template.id, template.name, template.subject, template.body, template.category, template.variables]);
+            }
         }
+        console.log('PostgreSQL database initialized successfully');
     }
-    console.log(`Database initialized at: ${DB_PATH}`);
+    catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Database initialization failed:', error);
+        throw error;
+    }
+    finally {
+        client.release();
+    }
 }
 // Lead operations
 export const leadsDB = {
-    create: (lead) => {
-        exec(`INSERT INTO leads (id, name, email, phone, company, title, status, source, notes, estimated_value, priority, tags)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+    create: async (lead) => {
+        await query(`INSERT INTO leads (id, name, email, phone, company, title, status, source, notes, estimated_value, priority, tags)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`, [
             lead.id,
             lead.name,
             lead.email,
@@ -240,10 +215,11 @@ export const leadsDB = {
             JSON.stringify(lead.tags || [])
         ]);
     },
-    getById: (id) => {
-        const row = get('SELECT * FROM leads WHERE id = ?', [id]);
-        if (!row)
+    getById: async (id) => {
+        const { rows } = await query('SELECT * FROM leads WHERE id = $1', [id]);
+        if (rows.length === 0)
             return null;
+        const row = rows[0];
         return {
             ...row,
             notes: parseJSON(row.notes),
@@ -254,23 +230,24 @@ export const leadsDB = {
             updatedAt: row.updated_at,
         };
     },
-    list: (filters = {}) => {
-        let query = 'SELECT * FROM leads WHERE 1=1';
+    list: async (filters = {}) => {
+        let sql = 'SELECT * FROM leads WHERE 1=1';
         const params = [];
+        let paramIndex = 1;
         if (filters.status) {
-            query += ' AND status = ?';
+            sql += ` AND status = $${paramIndex++}`;
             params.push(filters.status);
         }
         if (filters.priority) {
-            query += ' AND priority = ?';
+            sql += ` AND priority = $${paramIndex++}`;
             params.push(filters.priority);
         }
         if (filters.source) {
-            query += ' AND source = ?';
+            sql += ` AND source = $${paramIndex++}`;
             params.push(filters.source);
         }
-        query += ' ORDER BY CASE priority WHEN "high" THEN 1 WHEN "medium" THEN 2 ELSE 3 END, created_at DESC';
-        const rows = all(query, params);
+        sql += ' ORDER BY CASE priority WHEN \'high\' THEN 1 WHEN \'medium\' THEN 2 ELSE 3 END, created_at DESC';
+        const { rows } = await query(sql, params);
         return rows.map(row => ({
             ...row,
             notes: parseJSON(row.notes),
@@ -281,67 +258,68 @@ export const leadsDB = {
             updatedAt: row.updated_at,
         }));
     },
-    update: (id, updates) => {
+    update: async (id, updates) => {
         const sets = [];
         const params = [];
+        let paramIndex = 1;
         if (updates.name) {
-            sets.push('name = ?');
+            sets.push(`name = $${paramIndex++}`);
             params.push(updates.name);
         }
         if (updates.email) {
-            sets.push('email = ?');
+            sets.push(`email = $${paramIndex++}`);
             params.push(updates.email);
         }
         if (updates.phone !== undefined) {
-            sets.push('phone = ?');
+            sets.push(`phone = $${paramIndex++}`);
             params.push(updates.phone);
         }
         if (updates.company) {
-            sets.push('company = ?');
+            sets.push(`company = $${paramIndex++}`);
             params.push(updates.company);
         }
         if (updates.title !== undefined) {
-            sets.push('title = ?');
+            sets.push(`title = $${paramIndex++}`);
             params.push(updates.title);
         }
         if (updates.status) {
-            sets.push('status = ?');
+            sets.push(`status = $${paramIndex++}`);
             params.push(updates.status);
         }
         if (updates.priority) {
-            sets.push('priority = ?');
+            sets.push(`priority = $${paramIndex++}`);
             params.push(updates.priority);
         }
         if (updates.estimatedValue !== undefined) {
-            sets.push('estimated_value = ?');
+            sets.push(`estimated_value = $${paramIndex++}`);
             params.push(updates.estimatedValue);
         }
         if (updates.notes) {
-            sets.push('notes = ?');
+            sets.push(`notes = $${paramIndex++}`);
             params.push(JSON.stringify(updates.notes));
         }
         if (updates.tags) {
-            sets.push('tags = ?');
+            sets.push(`tags = $${paramIndex++}`);
             params.push(JSON.stringify(updates.tags));
         }
         if (updates.lastContactedAt) {
-            sets.push('last_contacted_at = ?');
+            sets.push(`last_contacted_at = $${paramIndex++}`);
             params.push(updates.lastContactedAt);
         }
-        sets.push('updated_at = CURRENT_TIMESTAMP');
+        sets.push(`updated_at = CURRENT_TIMESTAMP`);
         params.push(id);
-        exec(`UPDATE leads SET ${sets.join(', ')} WHERE id = ?`, params);
+        await query(`UPDATE leads SET ${sets.join(', ')} WHERE id = $${paramIndex}`, params);
     },
-    delete: (id) => {
-        exec('DELETE FROM leads WHERE id = ?', [id]);
+    delete: async (id) => {
+        await query('DELETE FROM leads WHERE id = $1', [id]);
     },
-    search: (query) => {
-        const searchTerm = `%${query.toLowerCase()}%`;
-        const rows = all(`SELECT * FROM leads WHERE 
-        LOWER(name) LIKE ? OR 
-        LOWER(company) LIKE ? OR 
-        LOWER(email) LIKE ? OR
-        LOWER(tags) LIKE ?
+    search: async (queryStr) => {
+        const searchTerm = `%${queryStr.toLowerCase()}%`;
+        const { rows } = await query(`SELECT * FROM leads WHERE 
+        LOWER(name) LIKE $1 OR 
+        LOWER(company) LIKE $2 OR 
+        LOWER(email) LIKE $3 OR
+        LOWER(tags::text) LIKE $4
       ORDER BY created_at DESC`, [searchTerm, searchTerm, searchTerm, searchTerm]);
         return rows.map(row => ({
             ...row,
@@ -356,67 +334,70 @@ export const leadsDB = {
 };
 // Email template operations
 export const templatesDB = {
-    list: () => {
-        const rows = all('SELECT * FROM email_templates');
+    list: async () => {
+        const { rows } = await query('SELECT * FROM email_templates');
         return rows.map(row => ({
             ...row,
             variables: parseJSON(row.variables),
         }));
     },
-    getById: (id) => {
-        const row = get('SELECT * FROM email_templates WHERE id = ?', [id]);
-        if (!row)
+    getById: async (id) => {
+        const { rows } = await query('SELECT * FROM email_templates WHERE id = $1', [id]);
+        if (rows.length === 0)
             return null;
         return {
-            ...row,
-            variables: parseJSON(row.variables),
+            ...rows[0],
+            variables: parseJSON(rows[0].variables),
         };
     },
-    create: (template) => {
-        exec('INSERT INTO email_templates (id, name, subject, body, category, variables) VALUES (?, ?, ?, ?, ?, ?)', [template.id, template.name, template.subject, template.body, template.category, JSON.stringify(template.variables)]);
+    create: async (template) => {
+        await query('INSERT INTO email_templates (id, name, subject, body, category, variables) VALUES ($1, $2, $3, $4, $5, $6)', [template.id, template.name, template.subject, template.body, template.category, JSON.stringify(template.variables)]);
     },
-    update: (id, updates) => {
+    update: async (id, updates) => {
         const sets = [];
         const params = [];
+        let paramIndex = 1;
         if (updates.name) {
-            sets.push('name = ?');
+            sets.push(`name = $${paramIndex++}`);
             params.push(updates.name);
         }
         if (updates.subject) {
-            sets.push('subject = ?');
+            sets.push(`subject = $${paramIndex++}`);
             params.push(updates.subject);
         }
         if (updates.body) {
-            sets.push('body = ?');
+            sets.push(`body = $${paramIndex++}`);
             params.push(updates.body);
         }
         if (updates.category) {
-            sets.push('category = ?');
+            sets.push(`category = $${paramIndex++}`);
             params.push(updates.category);
         }
         if (updates.variables) {
-            sets.push('variables = ?');
+            sets.push(`variables = $${paramIndex++}`);
             params.push(JSON.stringify(updates.variables));
         }
         params.push(id);
-        exec(`UPDATE email_templates SET ${sets.join(', ')} WHERE id = ?`, params);
+        await query(`UPDATE email_templates SET ${sets.join(', ')} WHERE id = $${paramIndex}`, params);
     },
-    delete: (id) => {
-        exec('DELETE FROM email_templates WHERE id = ?', [id]);
+    delete: async (id) => {
+        await query('DELETE FROM email_templates WHERE id = $1', [id]);
     },
 };
 // Email logs operations
 export const emailsDB = {
-    create: (email) => {
-        exec('INSERT INTO email_logs (id, lead_id, template_id, subject, body, status) VALUES (?, ?, ?, ?, ?, ?)', [email.id, email.leadId, email.templateId || null, email.subject, email.body, email.status]);
+    create: async (email) => {
+        await query('INSERT INTO email_logs (id, lead_id, template_id, subject, body, status) VALUES ($1, $2, $3, $4, $5, $6)', [email.id, email.leadId, email.templateId || null, email.subject, email.body, email.status]);
     },
-    listByLead: (leadId) => {
+    listByLead: async (leadId) => {
         let rows;
         if (leadId) {
-            rows = all('SELECT * FROM email_logs WHERE lead_id = ? ORDER BY sent_at DESC', [leadId]);
+            const result = await query('SELECT * FROM email_logs WHERE lead_id = $1 ORDER BY sent_at DESC', [leadId]);
+            rows = result.rows;
         }
         else {
-            rows = all('SELECT * FROM email_logs ORDER BY sent_at DESC');
+            const result = await query('SELECT * FROM email_logs ORDER BY sent_at DESC');
+            rows = result.rows;
         }
         return rows.map(row => ({
             ...row,
@@ -430,9 +411,9 @@ export const emailsDB = {
 };
 // Meeting operations
 export const meetingsDB = {
-    create: (meeting) => {
-        exec(`INSERT INTO meetings (id, lead_id, title, description, scheduled_at, duration, location, meeting_link)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [
+    create: async (meeting) => {
+        await query(`INSERT INTO meetings (id, lead_id, title, description, scheduled_at, duration, location, meeting_link)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`, [
             meeting.id,
             meeting.leadId,
             meeting.title,
@@ -443,27 +424,28 @@ export const meetingsDB = {
             meeting.meetingLink || null
         ]);
     },
-    list: (filters = {}) => {
-        let query = 'SELECT * FROM meetings WHERE 1=1';
+    list: async (filters = {}) => {
+        let sql = 'SELECT * FROM meetings WHERE 1=1';
         const params = [];
+        let paramIndex = 1;
         if (filters.leadId) {
-            query += ' AND lead_id = ?';
+            sql += ` AND lead_id = $${paramIndex++}`;
             params.push(filters.leadId);
         }
         if (filters.status) {
-            query += ' AND status = ?';
+            sql += ` AND status = $${paramIndex++}`;
             params.push(filters.status);
         }
         if (filters.fromDate) {
-            query += ' AND scheduled_at >= ?';
+            sql += ` AND scheduled_at >= $${paramIndex++}`;
             params.push(filters.fromDate);
         }
         if (filters.toDate) {
-            query += ' AND scheduled_at <= ?';
+            sql += ` AND scheduled_at <= $${paramIndex++}`;
             params.push(filters.toDate);
         }
-        query += ' ORDER BY scheduled_at ASC';
-        const rows = all(query, params);
+        sql += ' ORDER BY scheduled_at ASC';
+        const { rows } = await query(sql, params);
         return rows.map(row => ({
             ...row,
             leadId: row.lead_id,
@@ -471,70 +453,72 @@ export const meetingsDB = {
             meetingLink: row.meeting_link,
         }));
     },
-    update: (id, updates) => {
+    update: async (id, updates) => {
         const sets = [];
         const params = [];
+        let paramIndex = 1;
         if (updates.title) {
-            sets.push('title = ?');
+            sets.push(`title = $${paramIndex++}`);
             params.push(updates.title);
         }
         if (updates.description !== undefined) {
-            sets.push('description = ?');
+            sets.push(`description = $${paramIndex++}`);
             params.push(updates.description);
         }
         if (updates.scheduledAt) {
-            sets.push('scheduled_at = ?');
+            sets.push(`scheduled_at = $${paramIndex++}`);
             params.push(updates.scheduledAt);
         }
         if (updates.duration) {
-            sets.push('duration = ?');
+            sets.push(`duration = $${paramIndex++}`);
             params.push(updates.duration);
         }
         if (updates.location !== undefined) {
-            sets.push('location = ?');
+            sets.push(`location = $${paramIndex++}`);
             params.push(updates.location);
         }
         if (updates.meetingLink !== undefined) {
-            sets.push('meeting_link = ?');
+            sets.push(`meeting_link = $${paramIndex++}`);
             params.push(updates.meetingLink);
         }
         if (updates.status) {
-            sets.push('status = ?');
+            sets.push(`status = $${paramIndex++}`);
             params.push(updates.status);
         }
         if (updates.outcome !== undefined) {
-            sets.push('outcome = ?');
+            sets.push(`outcome = $${paramIndex++}`);
             params.push(updates.outcome);
         }
         params.push(id);
-        exec(`UPDATE meetings SET ${sets.join(', ')} WHERE id = ?`, params);
+        await query(`UPDATE meetings SET ${sets.join(', ')} WHERE id = $${paramIndex}`, params);
     },
-    delete: (id) => {
-        exec('DELETE FROM meetings WHERE id = ?', [id]);
+    delete: async (id) => {
+        await query('DELETE FROM meetings WHERE id = $1', [id]);
     },
 };
 // Follow-up operations
 export const followUpsDB = {
-    create: (followUp) => {
-        exec('INSERT INTO follow_ups (id, lead_id, type, scheduled_at, description) VALUES (?, ?, ?, ?, ?)', [followUp.id, followUp.leadId, followUp.type, followUp.scheduledAt, followUp.description]);
+    create: async (followUp) => {
+        await query('INSERT INTO follow_ups (id, lead_id, type, scheduled_at, description) VALUES ($1, $2, $3, $4, $5)', [followUp.id, followUp.leadId, followUp.type, followUp.scheduledAt, followUp.description]);
     },
-    list: (filters = {}) => {
-        let query = 'SELECT * FROM follow_ups WHERE 1=1';
+    list: async (filters = {}) => {
+        let sql = 'SELECT * FROM follow_ups WHERE 1=1';
         const params = [];
+        let paramIndex = 1;
         if (filters.leadId) {
-            query += ' AND lead_id = ?';
+            sql += ` AND lead_id = $${paramIndex++}`;
             params.push(filters.leadId);
         }
         if (filters.completed !== undefined) {
-            query += ' AND completed = ?';
-            params.push(filters.completed ? 1 : 0);
+            sql += ` AND completed = $${paramIndex++}`;
+            params.push(filters.completed);
         }
         if (filters.fromDate) {
-            query += ' AND scheduled_at >= ?';
+            sql += ` AND scheduled_at >= $${paramIndex++}`;
             params.push(filters.fromDate);
         }
-        query += ' ORDER BY scheduled_at ASC';
-        const rows = all(query, params);
+        sql += ' ORDER BY scheduled_at ASC';
+        const { rows } = await query(sql, params);
         return rows.map(row => ({
             ...row,
             leadId: row.lead_id,
@@ -542,40 +526,41 @@ export const followUpsDB = {
             completedAt: row.completed_at,
         }));
     },
-    update: (id, updates) => {
+    update: async (id, updates) => {
         const sets = [];
         const params = [];
+        let paramIndex = 1;
         if (updates.type) {
-            sets.push('type = ?');
+            sets.push(`type = $${paramIndex++}`);
             params.push(updates.type);
         }
         if (updates.scheduledAt) {
-            sets.push('scheduled_at = ?');
+            sets.push(`scheduled_at = $${paramIndex++}`);
             params.push(updates.scheduledAt);
         }
         if (updates.description) {
-            sets.push('description = ?');
+            sets.push(`description = $${paramIndex++}`);
             params.push(updates.description);
         }
         if (updates.completed !== undefined) {
-            sets.push('completed = ?');
-            params.push(updates.completed ? 1 : 0);
+            sets.push(`completed = $${paramIndex++}`);
+            params.push(updates.completed);
         }
         if (updates.completedAt) {
-            sets.push('completed_at = ?');
+            sets.push(`completed_at = $${paramIndex++}`);
             params.push(updates.completedAt);
         }
         params.push(id);
-        exec(`UPDATE follow_ups SET ${sets.join(', ')} WHERE id = ?`, params);
+        await query(`UPDATE follow_ups SET ${sets.join(', ')} WHERE id = $${paramIndex}`, params);
     },
-    delete: (id) => {
-        exec('DELETE FROM follow_ups WHERE id = ?', [id]);
+    delete: async (id) => {
+        await query('DELETE FROM follow_ups WHERE id = $1', [id]);
     },
 };
 // Analytics queries
 export const analyticsDB = {
-    getPipeline: () => {
-        const rows = all(`
+    getPipeline: async () => {
+        const { rows } = await query(`
       SELECT status, COUNT(*) as count, COALESCE(SUM(estimated_value), 0) as value
       FROM leads
       GROUP BY status
@@ -591,10 +576,10 @@ export const analyticsDB = {
         };
         for (const row of rows) {
             if (pipeline[row.status]) {
-                pipeline[row.status].count = row.count;
-                pipeline[row.status].value = row.value;
-                const leads = all('SELECT * FROM leads WHERE status = ?', [row.status]);
-                pipeline[row.status].leads = leads.map(l => ({
+                pipeline[row.status].count = parseInt(row.count);
+                pipeline[row.status].value = parseFloat(row.value);
+                const { rows: leads } = await query('SELECT * FROM leads WHERE status = $1', [row.status]);
+                pipeline[row.status].leads = leads.map((l) => ({
                     ...l,
                     notes: parseJSON(l.notes),
                     tags: parseJSON(l.tags),
@@ -607,15 +592,23 @@ export const analyticsDB = {
         }
         return pipeline;
     },
-    getStats: () => {
-        const totalLeads = get('SELECT COUNT(*) as count FROM leads')?.count || 0;
-        const activeLeads = get('SELECT COUNT(*) as count FROM leads WHERE status NOT IN ("closed_won", "closed_lost")')?.count || 0;
-        const totalValue = get('SELECT COALESCE(SUM(estimated_value), 0) as value FROM leads')?.value || 0;
-        const totalMeetings = get('SELECT COUNT(*) as count FROM meetings')?.count || 0;
-        const totalEmails = get('SELECT COUNT(*) as count FROM email_logs')?.count || 0;
-        const pendingFollowUps = get('SELECT COUNT(*) as count FROM follow_ups WHERE completed = 0')?.count || 0;
-        const wonDeals = get('SELECT COUNT(*) as count FROM leads WHERE status = "closed_won"')?.count || 0;
-        const lostDeals = get('SELECT COUNT(*) as count FROM leads WHERE status = "closed_lost"')?.count || 0;
+    getStats: async () => {
+        const totalLeadsRes = await query('SELECT COUNT(*) as count FROM leads');
+        const totalLeads = parseInt(totalLeadsRes.rows[0]?.count || '0');
+        const activeLeadsRes = await query('SELECT COUNT(*) as count FROM leads WHERE status NOT IN (\'closed_won\', \'closed_lost\')');
+        const activeLeads = parseInt(activeLeadsRes.rows[0]?.count || '0');
+        const totalValueRes = await query('SELECT COALESCE(SUM(estimated_value), 0) as value FROM leads');
+        const totalValue = parseFloat(totalValueRes.rows[0]?.value || '0');
+        const totalMeetingsRes = await query('SELECT COUNT(*) as count FROM meetings');
+        const totalMeetings = parseInt(totalMeetingsRes.rows[0]?.count || '0');
+        const totalEmailsRes = await query('SELECT COUNT(*) as count FROM email_logs');
+        const totalEmails = parseInt(totalEmailsRes.rows[0]?.count || '0');
+        const pendingFollowUpsRes = await query('SELECT COUNT(*) as count FROM follow_ups WHERE completed = false');
+        const pendingFollowUps = parseInt(pendingFollowUpsRes.rows[0]?.count || '0');
+        const wonDealsRes = await query('SELECT COUNT(*) as count FROM leads WHERE status = \'closed_won\'');
+        const wonDeals = parseInt(wonDealsRes.rows[0]?.count || '0');
+        const lostDealsRes = await query('SELECT COUNT(*) as count FROM leads WHERE status = \'closed_lost\'');
+        const lostDeals = parseInt(lostDealsRes.rows[0]?.count || '0');
         const winRate = wonDeals + lostDeals > 0 ? ((wonDeals / (wonDeals + lostDeals)) * 100).toFixed(1) : '0';
         return {
             totalLeads,
@@ -628,5 +621,10 @@ export const analyticsDB = {
         };
     },
 };
-export { db, saveDatabase };
+// Export pool for advanced use cases
+export { pool };
+// Graceful shutdown helper
+export async function closeDatabase() {
+    await pool.end();
+}
 //# sourceMappingURL=db.js.map

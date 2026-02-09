@@ -1,52 +1,41 @@
-declare let db: any;
-declare function saveDatabase(): void;
+import { Pool } from 'pg';
+declare const pool: Pool;
 export declare function initDatabase(): Promise<void>;
 export declare const leadsDB: {
-    create: (lead: any) => void;
-    getById: (id: string) => any;
-    list: (filters?: any) => any[];
-    update: (id: string, updates: any) => void;
-    delete: (id: string) => void;
-    search: (query: string) => any[];
+    create: (lead: any) => Promise<void>;
+    getById: (id: string) => Promise<any | null>;
+    list: (filters?: any) => Promise<any[]>;
+    update: (id: string, updates: any) => Promise<void>;
+    delete: (id: string) => Promise<void>;
+    search: (queryStr: string) => Promise<any[]>;
 };
 export declare const templatesDB: {
-    list: () => any[];
-    getById: (id: string) => any;
-    create: (template: any) => void;
-    update: (id: string, updates: any) => void;
-    delete: (id: string) => void;
+    list: () => Promise<any[]>;
+    getById: (id: string) => Promise<any | null>;
+    create: (template: any) => Promise<void>;
+    update: (id: string, updates: any) => Promise<void>;
+    delete: (id: string) => Promise<void>;
 };
 export declare const emailsDB: {
-    create: (email: any) => void;
-    listByLead: (leadId: string) => any[];
+    create: (email: any) => Promise<void>;
+    listByLead: (leadId: string) => Promise<any[]>;
 };
 export declare const meetingsDB: {
-    create: (meeting: any) => void;
-    list: (filters?: any) => any[];
-    update: (id: string, updates: any) => void;
-    delete: (id: string) => void;
+    create: (meeting: any) => Promise<void>;
+    list: (filters?: any) => Promise<any[]>;
+    update: (id: string, updates: any) => Promise<void>;
+    delete: (id: string) => Promise<void>;
 };
 export declare const followUpsDB: {
-    create: (followUp: any) => void;
-    list: (filters?: any) => any[];
-    update: (id: string, updates: any) => void;
-    delete: (id: string) => void;
+    create: (followUp: any) => Promise<void>;
+    list: (filters?: any) => Promise<any[]>;
+    update: (id: string, updates: any) => Promise<void>;
+    delete: (id: string) => Promise<void>;
 };
 export declare const analyticsDB: {
-    getPipeline: () => Record<string, {
-        count: number;
-        value: number;
-        leads: any[];
-    }>;
-    getStats: () => {
-        totalLeads: number;
-        activeLeads: number;
-        totalPipelineValue: number;
-        totalMeetings: number;
-        totalEmails: number;
-        pendingFollowUps: number;
-        winRate: string;
-    };
+    getPipeline: () => Promise<any>;
+    getStats: () => Promise<any>;
 };
-export { db, saveDatabase };
+export { pool };
+export declare function closeDatabase(): Promise<void>;
 //# sourceMappingURL=db.d.ts.map
