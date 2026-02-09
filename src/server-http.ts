@@ -1228,3 +1228,11 @@ process.on("SIGINT", () => {
     process.exit(0);
   });
 });
+
+process.on("SIGTERM", () => {
+  console.log("\nReceived SIGTERM, shutting down gracefully...");
+  httpServer.close(() => {
+    console.log("Server closed");
+    process.exit(0);
+  });
+});
