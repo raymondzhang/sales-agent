@@ -1093,7 +1093,7 @@ httpServer.listen(PORT, () => {
     console.log(`API endpoints available at http://${HOST}:${PORT}/api/`);
     console.log(`MCP endpoint available at http://${HOST}:${PORT}/mcp`);
     console.log(`Health check at http://${HOST}:${PORT}/health`);
-    console.log(`Database: PostgreSQL ${DATABASE_URL ? '(connected via DATABASE_URL)' : '(local)'}`);
+    console.log(`Database: PostgreSQL ${process.env.DATABASE_URL ? '(connected via DATABASE_URL)' : '(local)'}`);
 });
 // Graceful shutdown
 process.on("SIGINT", () => {

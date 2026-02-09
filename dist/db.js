@@ -34,7 +34,8 @@ function toSnakeCase(obj) {
 async function query(sql, params = []) {
     const client = await pool.connect();
     try {
-        return await client.query(sql, params);
+        const result = await client.query(sql, params);
+        return result;
     }
     finally {
         client.release();

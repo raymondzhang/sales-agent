@@ -36,10 +36,11 @@ function toSnakeCase(obj: Record<string, any>): Record<string, any> {
 }
 
 // Execute query with params
-async function query<T>(sql: string, params: any[] = []): Promise<QueryResult<T>> {
+async function query<T extends Record<string, any>>(sql: string, params: any[] = []): Promise<QueryResult<T>> {
   const client = await pool.connect();
   try {
-    return await client.query(sql, params);
+    const result = await client.query(sql, params);
+    return result as QueryResult<T>;
   } finally {
     client.release();
   }
