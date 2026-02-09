@@ -10,7 +10,7 @@ import type {
   LeadPriority 
 } from '@/types';
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 async function fetchApi(endpoint: string, options?: RequestInit) {
   const response = await fetch(`${API_BASE}/${endpoint}`, {
