@@ -49,13 +49,14 @@ git push -u origin main
 
 ### Step 3: Configure the API Service
 
-Railway should auto-detect your Node.js project. Configure these settings:
+The project includes a `railway.json` config file that should auto-configure most settings. Railway should auto-detect your Node.js project.
 
 #### Basic Settings:
 - **Name**: `sales-agent-api`
 - **Root Directory**: `/` (leave empty or set to project root)
-- **Build Command**: `npm install && npm run build`
-- **Start Command**: `npm run start:server`
+- **Build Command**: `npm install && npm run build` (auto-detected from railway.json)
+- **Start Command**: `npm run start:server` (auto-detected from railway.json)
+- **Healthcheck Path**: `/health`
 
 #### Environment Variables:
 Click **"Variables"** tab, then add:
@@ -67,6 +68,24 @@ DATA_DIR=/app/data
 ```
 
 > **Note**: Click "Add" for each variable, then click "Deploy" to apply changes.
+
+> **Railway.json Config**: The root `railway.json` file contains:
+> ```json
+> {
+>   "$schema": "https://railway.app/railway.schema.json",
+>   "build": {
+>     "builder": "NIXPACKS",
+>     "buildCommand": "npm install && npm run build"
+>   },
+>   "deploy": {
+>     "startCommand": "npm run start:server",
+>     "healthcheckPath": "/health",
+>     "healthcheckTimeout": 30,
+>     "restartPolicyType": "ON_FAILURE",
+>     "restartPolicyMaxRetries": 10
+>   }
+> }
+> ```
 
 ---
 
@@ -94,8 +113,18 @@ Now deploy the React frontend as a separate service:
 3. Configure:
    - **Name**: `sales-agent-web`
    - **Root Directory**: `web` (important!)
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npx serve -s dist -l 3000` (or leave blank for static sites)
+   - **Build Command**: `npm install && npm run build` (from `web/railway.toml`)
+   - **Start Command**: `npx serve -s dist -l 3000` (from `web/railway.toml`)
+
+> **Web Railway.toml Config**: The `web/railway.toml` file contains:
+> ```toml
+> [build]
+> builder = "NIXPACKS"
+> buildCommand = "npm install && npm run build"
+>
+> [deploy]
+> startCommand = "npx serve -s dist -l 3000"
+> ```
 
 #### Alternative: Deploy as Static Site
 Railway may auto-detect it as a static site. If so:
