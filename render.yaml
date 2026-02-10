@@ -1,0 +1,9 @@
+services:
+  - type: static
+    name: sales-agent-web
+    runtime: static
+    buildCommand: cd web && npm install && npm run build
+    staticPublishPath: ./web/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://sales-agent-api-txbtrdnjbm.cn-hangzhou.fcapp.run
