@@ -1,43 +1,9 @@
 {
-  "name": "sales-agent-mcp",
+  "name": "sales-agent-api",
   "version": "1.0.0",
-  "description": "A comprehensive sales agent MCP server with lead management, email automation, scheduling, and analytics",
   "type": "module",
-  "main": "dist/index.js",
-  "engines": {
-    "node": ">=20.0.0"
-  },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "start": "node dist/server-http.js",
-    "start:server": "node dist/server-http.js",
-    "dev:server": "tsc --watch & nodemon dist/server-http.js",
-    "build:web": "cd web && npm run build",
-    "dev:web": "cd web && npm run dev",
-    "setup:web": "cd web && npm install",
-    "postinstall": "npm run build"
+    "build": "tsc"
   },
-  "keywords": [
-    "mcp",
-    "sales",
-    "agent",
-    "crm",
-    "automation"
-  ],
-  "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.4",
-    "cors": "^2.8.5",
-    "pg": "^8.13.1",
-    "zod": "^3.23.8"
-  },
-  "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/node": "^22.10.5",
-    "@types/pg": "^8.11.10",
-    "nodemon": "^3.0.3",
-    "typescript": "^5.7.2"
-  }
+  "dependencies": {}
 }

@@ -1,0 +1,5 @@
+# Deployment directory - do not commit credentials
+.env
+.s/
+*.log
+node_modules/

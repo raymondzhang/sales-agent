@@ -55,7 +55,17 @@ export function Dashboard() {
     );
   }
 
-  const { stats, pipeline, upcomingMeetings, pendingFollowUps, recentLeads } = data;
+  const { stats, pipeline, upcomingMeetings, pendingFollowUps, recentLeads } = data || {};
+  
+  if (!pipeline) {
+    return (
+      <Layout>
+        <div className="text-center py-12">
+          <p className="text-gray-500">Dashboard data incomplete. Please check API response.</p>
+        </div>
+      </Layout>
+    );
+  }
 
   const pipelineStages = [
     { name: t('pipeline.stages.new'), count: pipeline.new, color: '#3b82f6' },

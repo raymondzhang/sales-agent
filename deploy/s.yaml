@@ -1,0 +1,24 @@
+# 阿里云 FC 3.0 部署配置
+edition: 3.0.0
+name: sales-agent
+access: alibaba-main
+vars:
+  region: cn-hangzhou
+resources:
+  sales-agent:
+    component: fc3
+    props:
+      region: ${vars.region}
+      function:
+        name: sales-agent-api
+        runtime: nodejs20
+        handler: dist/index.handler
+        memorySize: 256
+        timeout: 30
+        code: ./
+      triggers:
+        - name: http
+          type: http
+          config:
+            authType: anonymous
+            methods: [GET, POST, OPTIONS]

@@ -10,10 +10,13 @@ import type {
   LeadPriority 
 } from '@/types';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 async function fetchApi(endpoint: string, options?: RequestInit) {
-  const response = await fetch(`${API_BASE}/${endpoint}`, {
+  const url = `${API_BASE}${endpoint}`;
+  console.log('Fetching:', url);
+  
+  const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
     },
@@ -36,7 +39,7 @@ export function useDashboard() {
   const fetchDashboard = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await fetchApi('dashboard');
+      const result = await fetchApi('/api/dashboard');
       setData(result);
       setError(null);
     } catch (err) {
@@ -67,7 +70,7 @@ export function useLeads(filters?: { status?: LeadStatus; priority?: LeadPriorit
       if (filters?.priority) params.append('priority', filters.priority);
       if (filters?.source) params.append('source', filters.source);
       
-      const result = await fetchApi(`leads?${params}`);
+      const result = await fetchApi(`/api/list_leads?${params}`);
       setLeads(result.leads || []);
       setError(null);
     } catch (err) {
@@ -82,7 +85,7 @@ export function useLeads(filters?: { status?: LeadStatus; priority?: LeadPriorit
   }, [fetchLeads]);
 
   const createLead = async (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const result = await fetchApi('leads/create', {
+    const result = await fetchApi('/api/create_lead', {
       method: 'POST',
       body: JSON.stringify(lead),
     });
@@ -91,7 +94,7 @@ export function useLeads(filters?: { status?: LeadStatus; priority?: LeadPriorit
   };
 
   const updateLead = async (leadId: string, updates: Partial<Lead>) => {
-    const result = await fetchApi('leads/update', {
+    const result = await fetchApi('/api/update_lead', {
       method: 'POST',
       body: JSON.stringify({ leadId, updates }),
     });
@@ -100,7 +103,7 @@ export function useLeads(filters?: { status?: LeadStatus; priority?: LeadPriorit
   };
 
   const deleteLead = async (leadId: string) => {
-    const result = await fetchApi('leads/delete', {
+    const result = await fetchApi('/api/delete_lead', {
       method: 'POST',
       body: JSON.stringify({ leadId }),
     });
@@ -109,7 +112,7 @@ export function useLeads(filters?: { status?: LeadStatus; priority?: LeadPriorit
   };
 
   const addNote = async (leadId: string, note: string) => {
-    const result = await fetchApi('leads/note', {
+    const result = await fetchApi('/api/add_note', {
       method: 'POST',
       body: JSON.stringify({ leadId, note }),
     });
@@ -129,7 +132,7 @@ export function useEmailTemplates() {
   const fetchTemplates = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await fetchApi('templates');
+      const result = await fetchApi('/api/templates');
       setTemplates(result.templates || []);
       setError(null);
     } catch (err) {
@@ -144,7 +147,7 @@ export function useEmailTemplates() {
   }, [fetchTemplates]);
 
   const createTemplate = async (template: Omit<EmailTemplate, 'id'>) => {
-    const result = await fetchApi('templates/create', {
+    const result = await fetchApi('/api/templates/create', {
       method: 'POST',
       body: JSON.stringify(template),
     });
@@ -153,7 +156,7 @@ export function useEmailTemplates() {
   };
 
   const updateTemplate = async (templateId: string, updates: Partial<EmailTemplate>) => {
-    const result = await fetchApi('templates/update', {
+    const result = await fetchApi('/api/templates/update', {
       method: 'POST',
       body: JSON.stringify({ templateId, updates }),
     });
@@ -162,7 +165,7 @@ export function useEmailTemplates() {
   };
 
   const deleteTemplate = async (templateId: string) => {
-    const result = await fetchApi('templates/delete', {
+    const result = await fetchApi('/api/templates/delete', {
       method: 'POST',
       body: JSON.stringify({ templateId }),
     });
@@ -182,7 +185,7 @@ export function useMeetings() {
   const fetchMeetings = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await fetchApi('meetings');
+      const result = await fetchApi('/api/meetings');
       setMeetings(result.meetings || []);
       setError(null);
     } catch (err) {
@@ -197,7 +200,7 @@ export function useMeetings() {
   }, [fetchMeetings]);
 
   const createMeeting = async (meeting: Omit<Meeting, 'id' | 'status'>) => {
-    const result = await fetchApi('meetings/create', {
+    const result = await fetchApi('/api/meetings/create', {
       method: 'POST',
       body: JSON.stringify(meeting),
     });
@@ -206,7 +209,7 @@ export function useMeetings() {
   };
 
   const updateMeeting = async (meetingId: string, updates: Partial<Meeting>) => {
-    const result = await fetchApi('meetings/update', {
+    const result = await fetchApi('/api/meetings/update', {
       method: 'POST',
       body: JSON.stringify({ meetingId, updates }),
     });
@@ -215,7 +218,7 @@ export function useMeetings() {
   };
 
   const deleteMeeting = async (meetingId: string) => {
-    const result = await fetchApi('meetings/delete', {
+    const result = await fetchApi('/api/meetings/delete', {
       method: 'POST',
       body: JSON.stringify({ meetingId }),
     });
@@ -235,7 +238,7 @@ export function useFollowUps() {
   const fetchFollowUps = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await fetchApi('followups');
+      const result = await fetchApi('/api/followups');
       setFollowUps(result.followUps || []);
       setError(null);
     } catch (err) {
@@ -250,7 +253,7 @@ export function useFollowUps() {
   }, [fetchFollowUps]);
 
   const createFollowUp = async (followUp: Omit<FollowUp, 'id' | 'completed' | 'completedAt'>) => {
-    const result = await fetchApi('followups/create', {
+    const result = await fetchApi('/api/followups/create', {
       method: 'POST',
       body: JSON.stringify(followUp),
     });
@@ -259,7 +262,7 @@ export function useFollowUps() {
   };
 
   const completeFollowUp = async (followUpId: string) => {
-    const result = await fetchApi('followups/complete', {
+    const result = await fetchApi('/api/followups/complete', {
       method: 'POST',
       body: JSON.stringify({ followUpId }),
     });
@@ -268,7 +271,7 @@ export function useFollowUps() {
   };
 
   const updateFollowUp = async (followUpId: string, updates: Partial<FollowUp>) => {
-    const result = await fetchApi('followups/update', {
+    const result = await fetchApi('/api/followups/update', {
       method: 'POST',
       body: JSON.stringify({ followUpId, updates }),
     });
@@ -277,7 +280,7 @@ export function useFollowUps() {
   };
 
   const deleteFollowUp = async (followUpId: string) => {
-    const result = await fetchApi('followups/delete', {
+    const result = await fetchApi('/api/followups/delete', {
       method: 'POST',
       body: JSON.stringify({ followUpId }),
     });
@@ -297,7 +300,7 @@ export function usePipeline() {
   const fetchPipeline = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await fetchApi('pipeline');
+      const result = await fetchApi('/api/get_pipeline');
       setPipeline(result);
       setError(null);
     } catch (err) {
@@ -327,7 +330,7 @@ export function useSalesReport(fromDate?: string, toDate?: string) {
       if (fromDate) params.append('fromDate', fromDate);
       if (toDate) params.append('toDate', toDate);
       
-      const result = await fetchApi(`reports/sales?${params}`);
+      const result = await fetchApi(`/api/reports/sales?${params}`);
       setReport(result);
       setError(null);
     } catch (err) {
